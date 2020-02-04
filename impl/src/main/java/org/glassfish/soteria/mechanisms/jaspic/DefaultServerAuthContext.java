@@ -17,6 +17,7 @@
 package org.glassfish.soteria.mechanisms.jaspic;
 
 import java.util.Collections;
+import java.util.function.Supplier;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -34,15 +35,15 @@ import javax.security.auth.message.module.ServerAuthModule;
  * <p>
  * Since this simple example only has a single SAM, we delegate directly to that one. Note that this {@link ServerAuthContext}
  * and the {@link ServerAuthModule} (SAM) share a common base interface: {@link ServerAuth}.
- * 
+ *
  * @author Arjan Tijms
  */
 public class DefaultServerAuthContext implements ServerAuthContext {
 
     private final ServerAuthModule serverAuthModule;
 
-    public DefaultServerAuthContext(CallbackHandler handler, ServerAuthModule serverAuthModule) throws AuthException {
-        this.serverAuthModule = serverAuthModule;
+    public DefaultServerAuthContext(CallbackHandler handler, Supplier<ServerAuthModule> serverAuthModuleSupplier) throws AuthException {
+        this.serverAuthModule = serverAuthModuleSupplier.get();
         serverAuthModule.initialize(null, null, handler, Collections.<String, String> emptyMap());
     }
 
