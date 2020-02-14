@@ -17,6 +17,7 @@
 package org.glassfish.soteria.mechanisms.jaspic;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -29,7 +30,7 @@ import javax.security.auth.message.module.ServerAuthModule;
 /**
  * This class functions as a kind of factory for {@link ServerAuthContext} instances, which are delegates for the actual
  * {@link ServerAuthModule} (SAM) that we're after.
- * 
+ *
  * @author Arjan Tijms
  */
 public class DefaultServerAuthConfig implements ServerAuthConfig {
@@ -38,21 +39,21 @@ public class DefaultServerAuthConfig implements ServerAuthConfig {
     private String appContext;
     private CallbackHandler handler;
     private Map<String, String> providerProperties;
-    private ServerAuthModule serverAuthModule;
+    private Supplier<ServerAuthModule> serverAuthModuleSupplier;
 
     public DefaultServerAuthConfig(String layer, String appContext, CallbackHandler handler,
-        Map<String, String> providerProperties, ServerAuthModule serverAuthModule) {
+        Map<String, String> providerProperties, Supplier<ServerAuthModule> serverAuthModuleSupplier) {
         this.layer = layer;
         this.appContext = appContext;
         this.handler = handler;
         this.providerProperties = providerProperties;
-        this.serverAuthModule = serverAuthModule;
+        this.serverAuthModuleSupplier = serverAuthModuleSupplier;
     }
 
     @Override
     public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject,
         @SuppressWarnings("rawtypes") Map properties) throws AuthException {
-        return new DefaultServerAuthContext(handler, serverAuthModule);
+        return new DefaultServerAuthContext(handler, serverAuthModuleSupplier);
     }
 
     // ### The methods below mostly just return what has been passed into the
