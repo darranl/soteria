@@ -40,8 +40,9 @@
         
         <glassfish.version>LATEST</glassfish.version>
         
-        <!-- Note: WildFly 13 has EE Security (Soteria) included, but not activated -->
-        <wildfly.version>12.0.0.Final</wildfly.version>
+        <galleon.version>4.2.5.Final</galleon.version>
+        <wildfly.version>20.0.0.Final</wildfly.version>
+        <wildfly.plugin.version>2.0.2.Final</wildfly.plugin.version>
         
         <tomee.version>7.0.4</tomee.version>
         
@@ -600,29 +601,75 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
+                        <groupId>org.jboss.galleon</groupId>
+                        <artifactId>galleon-maven-plugin</artifactId>
+                        <version>${galleon.version}</version>
                         <executions>
                             <execution>
-                                <id>unpack</id>
                                 <phase>process-test-classes</phase>
                                 <goals>
-                                    <goal>unpack</goal>
+                                    <goal>provision</goal>
                                 </goals>
                                 <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
+                                    <install-dir>${project.build.directory}/wildfly</install-dir>
+                                    <plugin-options>
+                                        <optional-packages>passive+</optional-packages>
+                                    </plugin-options>
+                                    <feature-packs>
+                                        <feature-pack>
                                             <groupId>org.wildfly</groupId>
-                                            <artifactId>wildfly-dist</artifactId>
+                                            <artifactId>wildfly-galleon-pack</artifactId>
                                             <version>${wildfly.version}</version>
-                                            <type>zip</type>
-                                            <overWrite>false</overWrite>
-                                            <outputDirectory>${project.build.directory}</outputDirectory>
-                                        </artifactItem>
-                                    </artifactItems>
+                                            <inherit-configs>false</inherit-configs>
+                                            <inherit-packages>false</inherit-packages>
+                                            <excluded-packages>
+                                                <name>product.conf</name>
+                                                <name>docs.schema</name>
+                                            </excluded-packages>
+                                        </feature-pack>
+                                    </feature-packs>
+                                    <configs>
+                                        <config>
+                                            <name>standalone.xml</name>
+                                            <model>standalone</model>
+                                            <excluded-layers>
+                                                <layer>legacy-security</layer>
+                                            </excluded-layers>
+                                            <!-- <layers>
+                                                <layer>cdi</layer>
+                                                <layer>core-tools</layer>
+                                                <layer>elytron</layer>
+                                                <layer>jmx-remoting</layer>
+                                                <layer>secure-management</layer>
+                                                <layer>web-server</layer>
+                                            </layers> -->
+                                        </config>
+                                    </configs>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <version>${wildfly.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>execute-commands</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <offline>true</offline>
+                            <commands>
+                                <command>embed-server</command>
+                                <command>/subsystem=undertow/application-security-domain=other:add(security-domain=ApplicationDomain, integrated-jaspi=false)</command>
+                            </commands>
+                            <jboss-home>${project.build.directory}/wildfly</jboss-home>
+                            <stdout>${project.build.directory}/wildfly-plugin.log</stdout>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -642,12 +689,25 @@
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             </systemPropertyVariables>
                             <environmentVariables>
-                                <JBOSS_HOME>${project.build.directory}/wildfly-${wildfly.version}</JBOSS_HOME>
+                                <JBOSS_HOME>${project.build.directory}/wildfly</JBOSS_HOME>
                             </environmentVariables>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
+            
+            <repositories>
+                <repository>
+                    <id>JBoss</id>
+                    <name>JBoss Repository</name>
+                    <url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
+                </repository>
+                <repository>
+                    <id>Red Hat</id>
+                    <name>Red Hat Repository</name>
+                    <url>https://maven.repository.redhat.com/ga/</url>
+                </repository>
+            </repositories>
         </profile>
 
         <profile>
